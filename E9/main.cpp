@@ -1,49 +1,55 @@
-#include <bits/stdc++.h> 
+#include <bits/stdc++.h>
 using namespace std;
 
-const int d = 256; 
-const int q = 101;  
+// d is the number of characters in the input alphabet
+const int d = 256;
+// q is a prime number used for mod to reduce the hash value size
+const int q = 101;
 
-int hashValue(string& str, int n) {
-    int h = 0;
-    for (int i = 0; i < n; i++)  h = (d * h + str[i]) % q;
-    return h;
-}
+// Rabin-Karp search function: returns the starting indices of each match
+vector<int> rabinKarp(const string &text, const string &pattern) {
+    int n = text.size();
+    int m = pattern.size();
+    vector<int> result;
+    
+    // If pattern length is greater than text length, no match is possible.
+    if(m > n) return result;
+    
+    int h = 1;  // The value of h would be "pow(d, m-1)%q"
+    for (int i = 0; i < m - 1; i++)
+        h = (h * d) % q;
+    
+    int p = 0;  // hash value for pattern
+    int t = 0;  // hash value for text window
 
-void rabinKarpSearch(string& text, string& pattern) {
-    int n = text.size(), m = pattern.size();
-    if (m > n) {
-        cout << "Pattern is longer than text." << endl;
-        return;
+    // Calculate the hash value of pattern and first window of text
+    for (int i = 0; i < m; i++) {
+        p = (d * p + pattern[i]) % q;
+        t = (d * t + text[i]) % q;
     }
-    int patternHash = hashValue(pattern, m);
-    int textHash = hashValue(text, m);
-    int dm = 1;
-    for (int i = 0; i < m - 1; i++) {
-        dm = (d * dm) % q;
-    }
+    
+    // Slide the pattern over text one by one
     for (int i = 0; i <= n - m; i++) {
-        if (patternHash == textHash) {
-            bool found = true;
-            for (int j = 0; j < m; j++) {
-                if (text[i + j] != pattern[j]) {
-                    found = false;
+        // Check if hash values of current window and pattern match.
+        // If the hash values match then only check for characters one by one
+        if (p == t) {
+            int j;
+            for (j = 0; j < m; j++) {
+                if (text[i + j] != pattern[j])
                     break;
-                }
             }
-            if (found) cout << "Pattern found at index " << i << endl;
+            if (j == m)
+                result.push_back(i); // Pattern found at index i
         }
+        
+        // Calculate hash value for next window: Remove leading digit, add trailing digit
         if (i < n - m) {
-            textHash = (d * (textHash - text[i] * dm) + text[i + m]) % q;
-            if (textHash < 0) textHash += q;  
+            t = (d * (t - text[i] * h) + text[i + m]) % q;
+            // We might get negative t, convert it to positive
+            if (t < 0)
+                t = t + q;
         }
     }
-}
-
-int main() {
-    string text, pattern;
-    cout << "Enter Text: "; cin >> text;
-    cout << "Enter Pattern: "; cin >> pattern;
-    rabinKarpSearch(text, pattern);
-    return 0;
+    
+    return result;
 }
